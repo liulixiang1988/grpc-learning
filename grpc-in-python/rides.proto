@@ -25,6 +25,17 @@ message StartResponse {
     string id = 1;
 }
 
+message TrackRequest {
+    int64 car_id = 1;
+    google.protobuf.Timestamp time = 2;
+    Location location = 3;
+}
+
+message TrackResponse {
+    uint64 count = 1; 
+}
+
 service Rides {
     rpc Start(StartRequest) returns (StartResponse){};
+    rpc Track(stream TrackRequest) returns (TrackResponse){};
 }

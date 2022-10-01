@@ -33,11 +33,23 @@ class Client:
             log.error('start: %s (%s)', err, err.__class__.__mro__)
             raise ClientError(f'{err.code()}: {err.details()}') from err
         return response.id
+    
+    def track(self, events):
+        self.stub.Track(track_request(event) for event in events)
 
+
+def track_request(event):
+    request = pb.TrackRequest(
+        car_id=event.car_id,
+        location=pb.Location(lat=event.lat, lng=event.lng),
+    )
+    request.time.FromDatetime(event.time)
+    return request
 
 if __name__ == "__main__":
     import config
     from datetime import datetime
+    from events import rnd_event
 
     addr = f"{config.host}:{config.port}"
     client = Client(addr)
@@ -51,3 +63,7 @@ if __name__ == "__main__":
         time=datetime(2021, 9, 30, 20, 15),
     )
     log.info("ride ID: %s", ride_id)
+    try:
+        client.track(rnd_event(10))
+    except ClientError as err:
+        raise SystemExit(f'error: {err}')
