@@ -5,6 +5,7 @@ from uuid import uuid4
 import grpc
 from grpc_reflection.v1alpha import reflection
 
+import config
 import log
 import rides_pb2 as pb
 import rides_pb2_grpc as rpc
@@ -47,10 +48,19 @@ class Rides(rpc.RidesServicer):
             count += 1
             log.info('location: %r', request)
         return pb.TrackResponse(count=count)
+ 
+
+def load_credentials():
+    with open(config.cert_file, 'rb') as file:
+        cert = file.read()
     
+    with open(config.key_file, 'rb') as file:
+        key = file.read()
+    
+    return grpc.ssl_server_credentials([(key, cert),])
+
+   
 if __name__ == '__main__':
-    import config
-    
     server = grpc.server(ThreadPoolExecutor(max_workers=10), interceptors=[TimeInterceptor()])
     rpc.add_RidesServicer_to_server(Rides(), server)
     names = (
@@ -59,7 +69,7 @@ if __name__ == '__main__':
     )
     reflection.enable_server_reflection(names, server)
     addr = f'[::]:{config.port}'
-    server.add_insecure_port(addr)
+    server.add_secure_port(addr, load_credentials())
     server.start()
     
     log.info('server ready on %s', addr)
